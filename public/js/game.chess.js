@@ -1,7 +1,7 @@
 const { Chess } = require("chess.js");
 
 const socket = io(); // to connect fronted and backend in realtime
-const chess = new Chess();
+//const Chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 
 // initialize the values:
@@ -71,25 +71,65 @@ const renderBoard = () => {
         boardElement.appendChild(squareElement);
      });
    });
+   if(playerRole === "b"){
+    boardElement.classList.add("flipped");
+   }
+   else{
+    boardElement.classList.remove("flipped");
+   }
 };
 
-const handleMove = () => {};
+// handle the moves:
+const handleMove = (source,target) => {
+    const move = {
+        from:`${String.fromCharCode(97 + source.col)}${8 - source.row}`,
+        to:`${String.fromCharCode(97 + target.col)}${8 - target.row}`,
+        promotion:`q`,
+    };
+    // send the move to backend
+    socket.emit("move",move);
+};
+
 
 // get pieceUnicodes
 const getPieceUnicode = (piece) => {
     const unicodePieces = {
-        wp: "♙",
-        wr: "♖",
-        wn: "♘",
-        wb: "♗",
-        wq: "♕",
-        wk: "♔",
-        bp: "♟",
-        br: "♜",
-        bn: "♞",
-        bb: "♝",
-        bq: "♛",
-        bk: "♚",
+        p: "♙",
+        r: "♖",
+        n: "♘",
+        b: "♗",
+        q: "♕",
+        k: "♔",
+        P: "♟",
+        R: "♜",
+        N: "♞",
+        B: "♝",
+        Q: "♛",
+        K: "♚",
     };
     return unicodePieces[piece.type] || "";
 };
+
+
+// socket io: send the data to backend:
+socket.on("playerRole", function(role){
+    playerRole = role;
+    renderBoard();
+});
+
+socket.on("spectatorRole",function(){
+    playerRole = null;
+    renderBoard();
+})
+
+socket.on("boardState", function(fen){
+    chess.load(fen);
+    renderBoard();
+})
+
+// update the move and render board:
+socket.on("move", function(move){
+    chess.move(move);
+    renderBoard();
+})
+renderBoard();
